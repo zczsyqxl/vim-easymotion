@@ -1022,7 +1022,7 @@ function! s:PromptUser(groups) "{{{
         let line_num = str2nr(line_num)
         let col_num = str2nr(col_num)
 
-        let col_num = prev_col_num + 1
+        let col_num = max([prev_col_num + 1, col_num])
         let prev_col_num = col_num
 
         if _hl_group == g:EasyMotion_hl_group_target && ! has_key(lines, line_num)
