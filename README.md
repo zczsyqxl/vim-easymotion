@@ -4,6 +4,8 @@ Vim motion on speed!
 
 Original vim-easymotion replaces buffer text with markers. It's unacceptable in VS Code since it produces many errors in your code. Also VS Code has better metaphor for such things - text decorations. This fork fixes these things
 
+![Vscode-easymotion](/easy-motion-vscode.png)
+
 =====
 [![Build Status](https://travis-ci.org/easymotion/vim-easymotion.svg?branch=master)](https://travis-ci.org/easymotion/vim-easymotion)
 
