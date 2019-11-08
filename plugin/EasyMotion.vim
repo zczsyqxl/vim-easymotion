@@ -286,5 +286,10 @@ command! -nargs=1
 " == Restore 'cpoptions' {{{
 let &cpo = s:save_cpo
 unlet s:save_cpo
+
+
+" Need to load highlighting definitions early
+call EasyMotion#highlight#init()
+
 " }}}
 " vim: fdm=marker:et:ts=4:sw=4:sts=4
