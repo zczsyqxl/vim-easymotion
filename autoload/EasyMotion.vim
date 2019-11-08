@@ -495,7 +495,7 @@ endfunction "}}}
 " -- Draw --------------------------------
 function! s:SetLines(lines, key) " {{{
     for [line_num, line] in a:lines
-        keepjumps call setline(line_num, line[a:key])
+        " keepjumps call setline(line_num, line[a:key])
     endfor
 endfunction " }}}
 
@@ -984,6 +984,7 @@ function! s:PromptUser(groups) "{{{
 
     " -- Prepare marker lines ---------------- {{{
     let lines = {}
+    let lines2 = {}
 
     let coord_key_dict = s:CreateCoordKeyDict(a:groups)
 
@@ -1005,102 +1006,57 @@ function! s:PromptUser(groups) "{{{
         "
         " }}}
 
-        " Prepare original line and marker line {{{
-        let [line_num, col_num] = split(dict_key, ',')
-
-        let line_num = str2nr(line_num)
-        let col_num = str2nr(col_num)
-        if ! has_key(lines, line_num)
-            let current_line = getline(line_num)
-            let lines[line_num] = {
-                \ 'orig': current_line,
-                \ 'marker': current_line,
-                \ 'mb_compensation': 0,
-                \ }
-            " mb_compensation -> multibyte compensation
-            let prev_col_num = 0
-        endif "}}}
-
-        " Multibyte Compensation: {{{
-        " Solve multibyte issues by matching the byte column
-        " number instead of the visual column
-        " Compensate for byte difference between marker
-        " character and target character
-        "
-        " This has to be done in order to match the correct
-        " column; \%c matches the byte column and not display
-        " column.
-        let col_num = max([prev_col_num + 1,
-                        \  col_num - lines[line_num]['mb_compensation']])
-        let prev_col_num = col_num
-        "}}}
-
         " Prepare marker characters {{{
         let marker_chars = coord_key_dict[1][dict_key]
         let marker_chars_len = EasyMotion#helper#strchars(marker_chars)
         "}}}
 
-        " Replace {target} with {marker} & Highlight {{{
-        let col_add = 0 " Column add byte length
-        " Disable two-key-combo feature?
-        let marker_max_length = g:EasyMotion_disable_two_key_combo == 1
-                                \ ? 1 : 2
-        for i in range(min([marker_chars_len, marker_max_length]))
-            let marker_char = split(marker_chars, '\zs')[i]
-            " EOL {{{
-            if strlen(lines[line_num]['marker']) < col_num + col_add
-                " Append marker chars if target is EOL
-                let lines[line_num]['marker'] .= ' '
-            endif "}}}
+        " Highlight targets {{{
+        let _hl_group =
+        \   (marker_chars_len == 1) ? g:EasyMotion_hl_group_target
+        \   : g:EasyMotion_hl2_first_group_target
 
-            let target_col_regexp = '\%' . (col_num + col_add) . 'c.'
-            let target_char = matchstr(lines[line_num]['marker'],
-                                      \ target_col_regexp)
-            let space_len = strdisplaywidth(target_char)
-                        \ - strdisplaywidth(marker_char)
-            " Substitute marker character
-            let substitute_expr = marker_char . repeat(' ', space_len)
+        " Prepare original line and marker line {{{
+        let [line_num, col_num] = split(dict_key, ',')
 
-            let lines[line_num]['marker'] = substitute(
-                \ lines[line_num]['marker'],
-                \ target_col_regexp,
-                \ escape(substitute_expr,'&'),
-                \ '')
+        let line_num = str2nr(line_num)
+        let col_num = str2nr(col_num)
 
-            " Highlight targets {{{
-            let _hl_group =
-            \   (marker_chars_len == 1) ? g:EasyMotion_hl_group_target
-            \   : (i == 0) ? g:EasyMotion_hl2_first_group_target
-            \   : g:EasyMotion_hl2_second_group_target
+        let col_num = prev_col_num + 1
+        let prev_col_num = col_num
 
-            if exists('*matchaddpos')
-                call EasyMotion#highlight#add_pos_highlight(
-                            \ line_num, col_num + col_add, _hl_group)
-            else
-                call EasyMotion#highlight#add_highlight(
-                    \ '\%' . line_num . 'l' . target_col_regexp,
-                    \ _hl_group)
-            endif
-            "}}}
+        if _hl_group == g:EasyMotion_hl_group_target && ! has_key(lines, line_num)
+            let lines[line_num] = [[col_num, marker_chars]]
+            let prev_col_num = 0
+        elseif _hl_group == g:EasyMotion_hl_group_target
+            call add(lines[line_num], [col_num, marker_chars])
+        endif
 
-            " Add marker/target length difference for multibyte compensation
-            let lines[line_num]['mb_compensation'] +=
-                \ strlen(target_char) - strlen(substitute_expr)
-            " Shift column
-            let col_add += strlen(marker_char)
-        endfor
-        "}}}
+        if _hl_group == g:EasyMotion_hl2_first_group_target && ! has_key(lines2, line_num)
+            let lines2[line_num] = [[col_num, marker_chars]]
+            let prev_col_num = 0
+        elseif _hl_group == g:EasyMotion_hl2_first_group_target
+            call add(lines2[line_num], [col_num, marker_chars])
+        endif
+
     endfor
 
     let lines_items = items(lines)
+    let lines2_items = items(lines2)
     " }}}
 
     " -- Put labels on targets & Get User Input & Restore all {{{
     " Save undo tree
-    let undo_lock = EasyMotion#undo#save()
+    " let undo_lock = EasyMotion#undo#save()
     try
         " Set lines with markers {{{
-        call s:SetLines(lines_items, 'marker')
+        " call s:SetLines(lines_items, 'marker')
+        if len(lines_items) > 0
+            call VSCodeSetTextDecorations(g:EasyMotion_hl_group_target, lines_items)
+        endif
+        if len(lines2_items) > 0
+            call VSCodeSetTextDecorations(g:EasyMotion_hl2_first_group_target, lines2_items)
+        endif
         redraw "}}}
 
         " Get target character {{{
@@ -1134,7 +1090,13 @@ function! s:PromptUser(groups) "{{{
 
     finally
         " Restore original lines
-        call s:SetLines(lines_items, 'orig')
+        " call s:SetLines(lines_items, 'orig')
+        if len(lines_items) > 0
+            call VSCodeSetTextDecorations(g:EasyMotion_hl_group_target, [])
+        endif
+        if len(lines2_items) > 0
+            call VSCodeSetTextDecorations(g:EasyMotion_hl2_first_group_target, [])
+        endif
 
         " Un-highlight targets {{{
         call EasyMotion#highlight#delete_highlight(
@@ -1145,7 +1107,7 @@ function! s:PromptUser(groups) "{{{
         " }}}
 
         " Restore undo tree
-        call undo_lock.restore()
+        " call undo_lock.restore()
 
         redraw
     endtry "}}}
