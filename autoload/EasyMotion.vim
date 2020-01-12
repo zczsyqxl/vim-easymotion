@@ -988,7 +988,6 @@ function! s:PromptUser(groups) "{{{
 
     let coord_key_dict = s:CreateCoordKeyDict(a:groups)
 
-    let prev_col_num = 0
     for dict_key in sort(coord_key_dict[0])
         " NOTE: {{{
         " let g:EasyMotion_keys = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -1022,19 +1021,14 @@ function! s:PromptUser(groups) "{{{
         let line_num = str2nr(line_num)
         let col_num = str2nr(col_num)
 
-        let col_num = col_num + 1
-        let prev_col_num = col_num
-
         if _hl_group == g:EasyMotion_hl_group_target && ! has_key(lines, line_num)
             let lines[line_num] = [[col_num, marker_chars]]
-            let prev_col_num = 0
         elseif _hl_group == g:EasyMotion_hl_group_target
             call add(lines[line_num], [col_num, marker_chars])
         endif
 
         if _hl_group == g:EasyMotion_hl2_first_group_target && ! has_key(lines2, line_num)
             let lines2[line_num] = [[col_num, marker_chars]]
-            let prev_col_num = 0
         elseif _hl_group == g:EasyMotion_hl2_first_group_target
             call add(lines2[line_num], [col_num, marker_chars])
         endif
