@@ -51,13 +51,13 @@ let g:EasyMotion_hl_move           = get(g:,
     \ 'EasyMotion_hl_move', 'EasyMotionMoveHL')
 
 let s:target_hl_defaults = {
-    \   'gui'     : ['NONE', '#ff0000' , 'bold']
+    \   'gui'     : ['NONE', '#9cdcfe' , 'bold']
     \ , 'cterm256': ['NONE', '196'     , 'bold']
     \ , 'cterm'   : ['NONE', 'red'     , 'bold']
     \ }
 
 let s:target_hl2_first_defaults = {
-    \   'gui'     : ['NONE', '#ffb400' , 'bold']
+    \   'gui'     : ['NONE', '#adff2f' , 'bold']
     \ , 'cterm256': ['NONE', '11'      , 'bold']
     \ , 'cterm'   : ['NONE', 'yellow'  , 'bold']
     \ }
